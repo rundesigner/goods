@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+    Document   : vm.xml
+    Created on : 19 Ноябрь 2008 г., 11:24
+    Author     : msv
+    Description:
+        Purpose of the document follows.
+-->
+
+<!DOCTYPE sqlMap PUBLIC '-//iBATIS.com//DTD SQL Map 2.0//EN' 'http://www.ibatis.com/dtd/sql-map-config-2.dtd'>
+<sqlMap namespace="full-sync">
+     <insert id="insFullSyncUiversal" parameterClass="HashMap">
+        INSERT INTO $tablename$ $query$
+    </insert>
+    <insert id="allFullSyncUiversal" parameterClass="String">
+        $value$
+    </insert>
+    <insert id="ins_category_state" parameterClass="String">
+        INSERT INTO category_state $value$
+    </insert>
+    <insert id="ins_category_xref" parameterClass="String">
+        INSERT INTO category_xref $value$
+    </insert>
+    <insert id="ins_jos_virtuemart_categories_en_gb" parameterClass="String">
+        INSERT INTO jos_virtuemart_categories_en_gb $value$
+    </insert>
+    <insert id="ins_jos_virtuemart_categories_ru_ru" parameterClass="String">
+        INSERT INTO jos_virtuemart_categories_ru_ru $value$
+    </insert>
+    <insert id="ins_jos_virtuemart_categories" parameterClass="String">
+        INSERT INTO jos_virtuemart_categories $value$
+    </insert>
+    <insert id="ins_jos_virtuemart_category_categories" parameterClass="String">
+        INSERT INTO jos_virtuemart_category_categories $value$
+    </insert>
+    <insert id="ins_jos_virtuemart_category_medias" parameterClass="String">
+        INSERT INTO jos_virtuemart_category_medias $value$
+    </insert>
+    <insert id="ins_jos_virtuemart_customs" parameterClass="String">
+        INSERT INTO jos_virtuemart_customs $value$
+    </insert>
+    <insert id="ins_jos_virtuemart_manufacturer_medias" parameterClass="String">
+        INSERT INTO jos_virtuemart_manufacturer_medias $value$
+    </insert>
+    <insert id="ins_jos_virtuemart_manufacturercategories_en_gb" parameterClass="String">
+        INSERT INTO jos_virtuemart_manufacturercategories_en_gb $value$
+    </insert>
+    <insert id="ins_jos_virtuemart_manufacturercategories" parameterClass="String">
+        INSERT INTO jos_virtuemart_manufacturercategories $value$
+    </insert>
+    <insert id="ins_jos_virtuemart_manufacturers_en_gb" parameterClass="String">
+        INSERT INTO jos_virtuemart_manufacturers_en_gb $value$
+    </insert>
+    <insert id="ins_jos_virtuemart_manufacturers_ru_ru" parameterClass="String">
+        INSERT INTO jos_virtuemart_manufacturers_ru_ru $value$
+    </insert>
+    <insert id="ins_jos_virtuemart_manufacturers" parameterClass="String">
+        INSERT INTO jos_virtuemart_manufacturers $value$
+    </insert>
+    <insert id="ins_jos_virtuemart_medias" parameterClass="String">
+        INSERT INTO jos_virtuemart_medias $value$
+    </insert>
+    <insert id="ins_jos_virtuemart_product_categories" parameterClass="String">
+        INSERT INTO jos_virtuemart_product_categories $value$
+    </insert>
+    <insert id="ins_jos_virtuemart_product_customfields" parameterClass="String">
+        INSERT INTO jos_virtuemart_product_customfields $value$
+    </insert>
+    <insert id="ins_jos_virtuemart_product_manufacturers" parameterClass="String">
+        INSERT INTO jos_virtuemart_product_manufacturers $value$
+    </insert>
+    <insert id="ins_jos_virtuemart_product_medias" parameterClass="String">
+        INSERT INTO jos_virtuemart_product_medias $value$
+    </insert>
+    <insert id="ins_jos_virtuemart_product_prices" parameterClass="String">
+        INSERT INTO jos_virtuemart_product_prices $value$
+    </insert>
+    <insert id="ins_jos_virtuemart_products_en_gb" parameterClass="String">
+        INSERT INTO jos_virtuemart_products_en_gb $value$
+    </insert>
+    <insert id="ins_jos_virtuemart_products_ru_ru" parameterClass="String">
+        INSERT INTO jos_virtuemart_products_ru_ru $value$
+    </insert>
+    <insert id="ins_jos_virtuemart_products" parameterClass="String">
+        INSERT INTO jos_virtuemart_products $value$
+    </insert>
+    <insert id="ins_jos_virtuemart_shoppergroups" parameterClass="String">
+        INSERT INTO jos_virtuemart_shoppergroups $value$
+    </insert>
+    <insert id="ins_jos_virtuemart_vendor_medias" parameterClass="String">
+        INSERT INTO jos_virtuemart_vendor_medias $value$
+    </insert>
+    <insert id="ins_jos_virtuemart_vendors_en_gb" parameterClass="String">
+        INSERT INTO jos_virtuemart_vendors_en_gb $value$
+    </insert>
+    <insert id="ins_jos_virtuemart_vendors" parameterClass="String">
+        INSERT INTO jos_virtuemart_vendors $value$
+    </insert>
+    <insert id="ins_product_category_xref" parameterClass="String">
+        INSERT INTO product_category_xref $value$
+    </insert>
+    <insert id="ins_product_state" parameterClass="String">
+        INSERT INTO product_state $value$
+    </insert>
+</sqlMap>

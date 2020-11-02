@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Document   : vm.xml
+    Created on : 19 Ноябрь 2008 г., 11:24
+    Author     : msv
+    Description:
+        Purpose of the document follows.
+-->
+<!DOCTYPE sqlMap PUBLIC '-//iBATIS.com//DTD SQL Map 2.0//EN' 'http://www.ibatis.com/dtd/sql-map-config-2.dtd'>
+<sqlMap namespace="vm">
+        
+    <resultMap id="rmColumnsTable" class = "java.util.HashMap">
+        <result property="name" columnIndex="1"/>
+        <result property="type" columnIndex="2" />
+        <result property="nullable" columnIndex="3" nullValue="" />
+    </resultMap>
+
+    <select id="getColumnsTable"  resultClass = "java.util.HashMap" resultMap="rmColumnsTable" parameterClass="String">
+        select 
+          COLUMN_NAME,
+          TYPE_NAME,
+          IS_NULLABLE
+        from INFORMATION_SCHEMA.SYSTEM_COLUMNS
+        where TABLE_NAME=#value#
+    </select>
+    <select id="getAllTables" parameterClass="String" resultClass="HashMap">
+        SELECT *
+        FROM INFORMATION_SCHEMA.SYSTEM_TABLES
+        WHERE TABLE_SCHEM='PUBLIC'
+    </select>
+    
+    <delete id="delMusorCategoryXref" >
+        delete  
+FROM category_xref cx 
+WHERE cx.category_child_id IN
+(
+SELECT cx2.category_child_id
+FROM category_xref cx2 
+LEFT JOIN jos_virtuemart_categories c ON cx2.category_child_id=c.virtuemart_category_id
+WHERE c.category_id IS NULL
+)
+    </delete>
+    
+    <delete id="delMusorCategoryState" >
+DELETE 
+FROM category_state cs1
+WHERE cs1.category_id IN
+( 
+SELECT cs.category_id
+FROM category_state cs 
+LEFT JOIN jos_virtuemart_categories c ON cs.category_id=c.virtuemart_category_id
+WHERE c.category_id IS NULL
+)
+    </delete>
+    
+    <delete id="delMusorProductState" >
+DELETE
+FROM product_state ps1
+WHERE ps1.product_id IN
+(
+SELECT ps.product_id
+FROM product_state ps
+LEFT JOIN jos_virtuemart_products p ON ps.product_id
+WHERE p.virtuemart_product_id IS NULL
+)
+    </delete>
+    
+
+    <delete id="delMusorPCXCategory" >
+DELETE
+FROM product_category_xref pcx1
+WHERE pcx1.category_id IN 
+(
+SELECT pcx.category_id
+FROM product_category_xref pcx
+LEFT JOIN  jos_virtuemart_categories c ON pcx.category_id=c.virtuemart_category_id
+WHERE  c.virtuemart_category_id is NULL
+)
+    </delete>
+
+    <delete id="delMusorPCXProduct" >
+DELETE
+FROM product_category_xref pcx1
+WHERE pcx1.product_id IN 
+(
+SELECT pcx.product_id
+FROM product_category_xref pcx
+LEFT JOIN jos_virtuemart_products p ON pcx.product_id=p.virtuemart_product_id
+WHERE p.virtuemart_product_id IS NULL 
+)
+    </delete>
+ 
+    <insert id="InsertEmptyCategoryStates"  >
+        insert into category_state (category_id, image_present,xml_id,created,marga,xml_name)
+        select virtuemart_category_id,'N',1,now,0,category_name
+        FROM jos_virtuemart_categories_ru_ru c
+        LEFT JOIN category_state cs ON c.virtuemart_category_id=cs.category_id
+        WHERE cs.category_id IS NULL
+    </insert>
+    
+    <insert id="InsertEmptyProductStates"  >
+        INSERT INTO product_state
+        SELECT virtuemart_product_id,1,p.product_name,p1.product_sku,now,now,'','',''
+        FROM jos_virtuemart_products_ru_ru p
+        LEFT JOIN jos_virtuemart_products p1 ON p.virtuemart_product_id=p1.virtuemart_product_id
+        LEFT JOIN product_state ps ON p.virtuemart_product_id=ps.product_id
+        WHERE ps.product_id IS NULL
+    </insert>
+    
+    <insert id="populateCategoryXref">
+        insert into category_xref
+        (category_child_id,category_parent_id)
+        select category_child_id,category_parent_id from
+        jos_virtuemart_category_categories x
+        LEFT JOIN category_xref cx ON x.category_child_id=cx.category_child_id AND x.category_parent_id=cx.category_parent_id
+        WHERE cx.category_child_id IS NULL
+    </insert>
+    
+    <update id="setPriceHandlerProduct">
+        UPDATE product_state
+        set xml_id=1
+    </update>
+    
+    <update id="setPriceHandlerCategory">
+        UPDATE category_state
+        set xml_id=1
+    </update>
+    
+
+    <resultMap id="rmImages" class = "HashMap">
+        <result property="FILE_URL_THUMB" columnIndex="1" nullValue="" />
+        <result property="FILE_URL" columnIndex="2" nullValue="" />
+    </resultMap>
+    
+    <select id="getAllProductImagesForCategory" resultClass="HashMap" resultMap="rmImages" parameterClass="int">
+        SELECT m.FILE_URL_THUMB
+        , m.FILE_URL
+        FROM JOS_VIRTUEMART_MEDIAS m 
+        LEFT JOIN JOS_VIRTUEMART_PRODUCT_MEDIAS pm ON m.VIRTUEMART_MEDIA_ID=pm.VIRTUEMART_MEDIA_ID
+        LEFT JOIN JOS_VIRTUEMART_PRODUCT_CATEGORIES pc ON pc.VIRTUEMART_PRODUCT_ID=pm.VIRTUEMART_PRODUCT_ID
+        WHERE pc.VIRTUEMART_CATEGORY_ID=#value#
+    </select>
+    
+    <select id="getDemoCntCategories" resultClass="int" >
+        SELECT COUNT(*)
+        FROM jos_virtuemart_categories
+    </select>
+    
+    <select id="getDemoCntProducts" resultClass="int" >
+        SELECT COUNT(*)
+        FROM jos_virtuemart_products
+    </select>
+   
+    <select id="getDemoCategory4Remove"  resultClass="int"  parameterClass="int">
+   SELECT virtuemart_category_id
+   FROM jos_virtuemart_categories
+   ORDER BY virtuemart_category_id DESC
+   LIMIT #value# OFFSET 0   
+    </select>
+   
+    <select id="getDemoProduct4Remove"  resultClass="int"  parameterClass="int">
+   SELECT virtuemart_product_id
+   FROM jos_virtuemart_products
+   ORDER BY virtuemart_product_id DESC
+   LIMIT #value# OFFSET 0   
+    </select>
+    
+    <select id="getDoubledProductSlug"  resultClass="string">
+              select    slug   from jos_virtuemart_products_ru_ru 
+                   group by slug
+                   having COUNT(*)>1
+    </select>        
+   
+    <select id="getProductsBySlug" resultClass="HashMap" parameterClass="string">
+       select  virtuemart_product_id,product_name   from jos_virtuemart_products_ru_ru 
+       where slug=#value#
+    </select>    
+   
+    <update id="VM2_updProductSlug"  parameterClass="HashMap">
+       UPDATE jos_virtuemart_products_ru_ru 
+       SET slug=#slug#
+       WHERE virtuemart_product_id=#VIRTUEMART_PRODUCT_ID#
+    </update>   
+   
+    <select id="getDoubledCategorySlug"  resultClass="string">
+              select    slug   from jos_virtuemart_categories_ru_ru 
+              group by slug
+              having COUNT(*)>1
+    </select>  
+     <select id="getCategoriesBySlug" resultClass="HashMap" parameterClass="string">
+       select  virtuemart_category_id,category_name   from jos_virtuemart_categories_ru_ru 
+       where slug=#value#
+    </select>    
+    
+    <update id="VM2_updCategorySlug"  parameterClass="HashMap">
+       UPDATE jos_virtuemart_categories_ru_ru 
+       SET slug=#slug#
+       WHERE virtuemart_category_id=#VIRTUEMART_CATEGORY_ID#
+    </update>  
+    
+</sqlMap>

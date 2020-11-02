@@ -1,0 +1,383 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+To change this template, choose Tools | Templates
+and open the template in the editor.
+-->
+
+<!DOCTYPE sqlMap PUBLIC '-//iBATIS.com//DTD SQL Map 2.0//EN' 'http://www.ibatis.com/dtd/sql-map-config-2.dtd'>
+<sqlMap namespace="vm">
+    
+    
+    <resultMap id="rmProductCat" class = "entries.CategoryNode">
+        <result property="index" columnIndex="1"/>
+        <result property="parentId" columnIndex="2" />
+        <result property="name" columnIndex="3" nullValue="" />
+    </resultMap>
+    
+    <select id="getProductCat"  resultClass = "entries.CategoryNode" resultMap="rmProductCat" parameterClass="entries.ProdListEntry">  
+        SELECT DISTINCT
+        CAT.VIRTUEMART_CATEGORY_ID AS index,
+        catCat.CATEGORY_PARENT_ID AS parentId,
+        catName.CATEGORY_NAME AS name
+        
+        FROM PUBLIC.JOS_VIRTUEMART_PRODUCT_CATEGORIES CAT
+        
+        INNER JOIN PUBLIC.JOS_VIRTUEMART_CATEGORIES_RU_RU catName
+        ON CAT.VIRTUEMART_CATEGORY_ID = catName.VIRTUEMART_CATEGORY_ID
+        
+        INNER JOIN PUBLIC.JOS_VIRTUEMART_CATEGORY_CATEGORIES catCat
+        ON CAT.VIRTUEMART_CATEGORY_ID = catCat.CATEGORY_CHILD_ID
+        
+        WHERE CAT.VIRTUEMART_PRODUCT_ID = #id# 
+        
+    </select>
+    
+    <resultMap id="rmProductList"  class="entries.ProdListEntry">
+        <result property="id" columnIndex="1"/>
+        <result property="name" columnIndex="2" nullValue="" />
+        <result property="desc" columnIndex="3" nullValue="" />
+        <result property="product_sku" columnIndex="4" nullValue="" />
+        <result property="published" columnIndex="5" nullValue="Y" />
+        <result property="product_in_stock" columnIndex="6"  nullValue="0" />
+        <result property="price" columnIndex="7" nullValue="0.00"/>
+        <result property="currency" columnIndex="8" nullValue="RUB"/>
+        <result property="idP" columnIndex="9" nullValue="-1"/>
+        <result property="parentId" columnIndex="10" nullValue="-1"/>
+        <result property="timestamp" columnIndex="11" nullValue=""/>
+        <result property="product_url" columnIndex="12" nullValue="" />
+        
+    </resultMap>
+   
+    <select id="getProductListManuf"  resultClass="entries.ProdListEntry" resultMap="rmProductList" parameterClass="java.util.Map">
+        SELECT 
+        prod.VIRTUEMART_PRODUCT_ID as id,
+        prodDesc.PRODUCT_NAME as name,
+        prodDesc.PRODUCT_DESC as desc,
+        prod.PRODUCT_SKU AS product_sku,
+        prod.PUBLISHED as published,
+        prod.PRODUCT_IN_STOCK AS product_in_stock,
+        prodPrice.PRODUCT_PRICE AS price,
+        prodPrice.PRODUCT_CURRENCY as currency,
+        prodPrice.VIRTUEMART_PRODUCT_PRICE_ID as idP,
+        prod.PRODUCT_PARENT_ID AS parentId,
+        '2015-01-01 00:00:00' AS upd,
+        prod.Product_url as product_url
+        FROM PUBLIC.JOS_VIRTUEMART_PRODUCTS AS prod
+        INNER JOIN PUBLIC.JOS_VIRTUEMART_PRODUCTS_RU_RU AS prodDesc ON prod.VIRTUEMART_PRODUCT_ID = prodDesc.VIRTUEMART_PRODUCT_ID
+        LEFT JOIN PUBLIC.JOS_VIRTUEMART_PRODUCT_PRICES AS prodPrice ON prod.VIRTUEMART_PRODUCT_ID = prodPrice.VIRTUEMART_PRODUCT_ID
+        LEFT JOIN PUBLIC.PRODUCT_STATE  AS ps ON prod.VIRTUEMART_PRODUCT_ID = ps.PRODUCT_ID        
+        INNER JOIN PUBLIC.JOS_VIRTUEMART_PRODUCT_CATEGORIES AS prodCat ON prod.VIRTUEMART_PRODUCT_ID = prodCat.VIRTUEMART_PRODUCT_ID        
+        LEFT JOIN PUBLIC.jos_virtuemart_product_manufacturers AS manuf ON prod.VIRTUEMART_PRODUCT_ID = manuf.virtuemart_product_id        
+        WHERE prod.VIRTUEMART_PRODUCT_ID is not null
+        AND prod.PRODUCT_PARENT_ID = 0
+        <isNotNull prepend="AND" property="id">
+            prod.VIRTUEMART_PRODUCT_ID = #id#
+        </isNotNull>
+        <isGreaterThan prepend="AND" property="catId" compareValue="0">
+            prodCat.VIRTUEMART_category_id = #catId#
+        </isGreaterThan>
+        <!-- manuf -->
+        <isNotNull prepend="AND" property="manufId">
+            <isGreaterThan property="manufId" compareValue="-1">
+              manuf.virtuemart_manufacturer_id = #manufId#
+            </isGreaterThan>
+        </isNotNull>
+        <!-- manuf -->
+        <isNotNull prepend="AND" property="searchString">
+            ( prodDesc.product_name like '%$searchString$%'
+            OR
+            prod.PRODUCT_SKU like '%$searchString$%' )
+        </isNotNull>
+        ORDER BY prod.VIRTUEMART_PRODUCT_ID
+        <isGreaterThan  property="cnt" compareValue="0">
+            LIMIT #limit# OFFSET #limitstart#
+        </isGreaterThan>        
+    </select>
+  
+<!-- 
+ДОБАВЛЕНИЕ ЗАПИСЕЙ В ТАБЛИЦУ
+-->
+    <insert id="insProductFromTable" parameterClass="entries.ProdListEntry">
+        INSERT INTO PUBLIC.JOS_VIRTUEMART_PRODUCTS(PUBLISHED,PRODUCT_SKU,PRODUCT_IN_STOCK,product_weight,PRODUCT_PARENT_ID,LAYOUT)
+        VALUES(#published#,#product_sku#,#product_in_stock#,#weight#,#parentId#,'')
+        <selectKey resultClass="int" keyProperty="id">
+            CALL IDENTITY()
+        </selectKey>
+    </insert>
+    <insert id="insProductNameFromTable" parameterClass="entries.ProdListEntry">
+        INSERT INTO PUBLIC.JOS_VIRTUEMART_PRODUCTS_RU_RU(VIRTUEMART_PRODUCT_ID ,PRODUCT_NAME,PRODUCT_DESC,PRODUCT_S_DESC)
+        VALUES(#id#,#name#,#desc#,#fdesc#)
+    </insert>
+    
+    <!--#currency# ??????? -->
+    <insert id="insPriceFromTable" parameterClass="entries.ProdListEntry">
+        INSERT INTO PUBLIC.JOS_VIRTUEMART_PRODUCT_PRICES(VIRTUEMART_PRODUCT_ID,PRODUCT_PRICE,PRODUCT_CURRENCY,VIRTUEMART_SHOPPERGROUP_ID)
+        VALUES(#id#,#price#,1,#shopper_group_id#)
+        <selectKey resultClass="int" keyProperty="idP">
+            CALL IDENTITY()
+        </selectKey>
+    </insert>   
+    
+    <insert id="insProductCategoryXrefLocal" parameterClass="java.util.Map">
+        INSERT INTO PUBLIC.PRODUCT_CATEGORY_XREF(PRODUCT_ID,CATEGORY_ID)
+        VALUES(#productId#,#categoryId#)
+    </insert>  
+    
+    <insert id="insProductState" parameterClass="java.util.Map">
+        INSERT INTO PUBLIC.PRODUCT_STATE(PRODUCT_ID)
+        values(#productId#)
+    </insert>
+ 
+<!-- 
+    ОБНОВЛЕНИЕ ЗАПИСЕЙ В ТАБЛИЦУ
+-->
+    <update id="updProductFromTable" parameterClass="entries.ProdListEntry">
+        
+        update PUBLIC.JOS_VIRTUEMART_PRODUCTS
+        SET PUBLISHED = #published#,
+        PRODUCT_SKU = #product_sku#,
+        PRODUCT_IN_STOCK = #product_in_stock#,
+        product_weight = #weight#,
+        PRODUCT_PARENT_ID = #parentId#,
+        Product_url = #product_url#
+        
+        WHERE VIRTUEMART_PRODUCT_ID = #id#
+
+    </update>
+    <update id="updProductNameFromTable" parameterClass="entries.ProdListEntry">
+        update PUBLIC.JOS_VIRTUEMART_PRODUCTS_RU_RU
+        SET PRODUCT_NAME = #name#,
+        PRODUCT_DESC = #desc#,
+        PRODUCT_S_DESC = #fdesc#
+        where VIRTUEMART_PRODUCT_ID = #id#
+
+    </update>
+    
+    <!--#currency# ??????? -->
+    <update id="updPriceFromTable" parameterClass="entries.ProdListEntry">
+        
+        update PUBLIC.JOS_VIRTUEMART_PRODUCT_PRICES
+        SET PRODUCT_PRICE = #price#,
+        VIRTUEMART_SHOPPERGROUP_ID = #shopper_group_id#
+        where VIRTUEMART_PRODUCT_ID = #id#
+
+    </update>
+<!-- 
+    УДАЛЕНИЕ ЗАПИСЕЙ В ТАБЛИЦУ
+-->    
+    <delete id="delProductFromTable" parameterClass="entries.ProdEntry">
+        DELETE FROM PUBLIC.JOS_VIRTUEMART_PRODUCTS
+        WHERE VIRTUEMART_PRODUCT_ID = #virtuemart_product_id#
+    </delete>
+    <delete id="delProductNameFromTable" parameterClass="entries.ProdEntry">     
+        delete from PUBLIC.JOS_VIRTUEMART_PRODUCTS_RU_RU
+        where VIRTUEMART_PRODUCT_ID = #virtuemart_product_id#
+    </delete>
+    <delete id="delPriceFromTable" parameterClass="entries.ProdEntry">   
+        delete from PUBLIC.JOS_VIRTUEMART_PRODUCT_PRICES
+        where VIRTUEMART_PRODUCT_ID = #virtuemart_product_id#
+    </delete>
+    <delete id="delProductCategoryXrefLocal" parameterClass="java.util.Map">
+        delete from PUBLIC.PRODUCT_CATEGORY_XREF
+        where PRODUCT_ID = #productId# and CATEGORY_ID = #categoryId#
+    </delete>
+    <delete id="delProductState" parameterClass="java.util.Map">
+        delete from PUBLIC.PRODUCT_STATE
+        where PRODUCT_ID = #productId#
+    </delete>
+    <!--Удаление категории по продукту -->
+    <delete id="delAllProductCategory" parameterClass="java.util.Map">
+        delete from PUBLIC.JOS_VIRTUEMART_PRODUCT_CATEGORIES
+        where VIRTUEMART_PRODUCT_ID = #productId#
+    </delete>
+    <!-- //медиа-->
+    <delete id="delProductMedia" parameterClass="java.util.Map">
+        delete from jos_virtuemart_medias m
+        where virtuemart_media_id = #mediaId#
+    </delete>
+        <!-- //ссылки с медиа-->
+    <delete id="delProductMediaXref" parameterClass="java.util.Map">
+        delete from jos_virtuemart_product_medias pm
+        where pm.VIRTUEMART_PRODUCT_ID = #productId#
+    </delete>
+      <!-- //ссылки с производителем-->
+    <delete id="delProductManufacturerXref" parameterClass="java.util.Map">
+        delete from PUBLIC.jos_virtuemart_product_manufacturers man
+        where man.VIRTUEMART_PRODUCT_ID = #productId#
+    </delete>
+    <update id="updProductFromTable1" parameterClass="entries.ProdEntry">   
+    update PUBLIC.JOS_VIRTUEMART_PRODUCTS
+    SET PUBLISHED = #published#,
+    PRODUCT_SKU = #product_sku#,
+    PRODUCT_IN_STOCK = #product_in_stock#,
+    Product_url = #product_url#,
+    VIRTUEMART_VENDOR_ID = #virtuemart_vendor_id#,    
+    LAYOUT = #layout#,
+    PRODUCT_SPECIAL = #product_special#,
+    INTNOTES = #intnotes#,
+    PRODUCT_IN_STOCK = #product_in_stock#,
+    PRODUCT_ORDERED = #product_ordered#,
+    LOW_STOCK_NOTIFICATION = #low_stock_notification#,
+    PRODUCT_AVAILABLE_DATE = #product_available_date#,
+    PRODUCT_LENGTH = #product_length#,
+    PRODUCT_LWH_UOM = #product_lwh_uom#,
+    PRODUCT_WIDTH = #product_width#,
+    PRODUCT_HEIGHT = #product_height#,
+    PRODUCT_WEIGHT_UOM = #product_weight_uom#,
+    PRODUCT_UNIT = #product_unit#,
+    PRODUCT_PACKAGING = #product_packaging#,
+    product_weight = #product_weight#,
+    PRODUCT_PARENT_ID = #product_parent_id#
+    WHERE VIRTUEMART_PRODUCT_ID = #virtuemart_product_id#
+    </update>
+
+
+    <resultMap id="rmProduct" class = "entries.ProdEntry">
+
+        <result property="virtuemart_vendor_id"   columnIndex="1" nullValue="1" />
+        <result property="product_parent_id"      columnIndex="2" nullValue="0" />
+        <result property="product_sku"            columnIndex="3" nullValue="" />
+        <result property="product_weight"         columnIndex="4" nullValue="0.0" />
+        <result property="product_weight_uom"     columnIndex="5" nullValue="" />
+        <result property="product_length"         columnIndex="6" nullValue="0.0" />
+        <result property="product_width"          columnIndex="7" nullValue="0.0" />
+        <result property="product_height"         columnIndex="8" nullValue="0.0" />
+        <result property="product_lwh_uom"        columnIndex="9" nullValue="" />
+        <result property="product_url"            columnIndex="10" nullValue="" />
+        <result property="product_in_stock"       columnIndex="11" nullValue="0" />
+        <result property="product_ordered"        columnIndex="12" nullValue="0" />
+        <result property="low_stock_notification" columnIndex="13" nullValue="0" />
+        <result property="product_available_date" columnIndex="14" nullValue="0000-00-00 00:00:00" />
+        <result property="product_availability"   columnIndex="15" nullValue="" />
+        <result property="product_special"        columnIndex="16" nullValue="0" />
+        <result property="product_sales"          columnIndex="17" nullValue="0" />
+        <result property="product_unit"           columnIndex="18" nullValue="" />
+        <result property="product_packaging"      columnIndex="19" nullValue="0" />
+        <result property="product_params"         columnIndex="20" nullValue="" />
+        <result property="hits"                   columnIndex="21" nullValue="0" />
+        <result property="intnotes"               columnIndex="22" nullValue="" />
+        <result property="metarobot"              columnIndex="23" nullValue="" />
+        <result property="metaauthor"             columnIndex="24" nullValue="" />
+        <result property="layout"                 columnIndex="25" nullValue="" />
+        <result property="published"              columnIndex="26" nullValue="0" />
+        <result property="created_on"             columnIndex="27" nullValue="0000-00-00 00:00:00" />
+        <result property="created_by"             columnIndex="28" nullValue="0" />
+        <result property="modified_on"            columnIndex="29" nullValue="0000-00-00 00:00:00" />
+        <result property="modified_by"            columnIndex="30" nullValue="0" />
+        <result property="locked_on"              columnIndex="31" nullValue="0000-00-00 00:00:00" />
+        <result property="locked_by"              columnIndex="32" nullValue="0" />
+        <result property="virtuemart_product_id"  columnIndex="33" nullValue="" />
+        <result property="product_s_desc"         columnIndex="34" nullValue="" />
+        <result property="product_desc"           columnIndex="35" nullValue="" />
+        <result property="product_name"           columnIndex="36" nullValue="" />
+        <result property="metadesc"               columnIndex="37" nullValue="" />
+        <result property="metakey"                columnIndex="38" nullValue="" />
+        <result property="customtitle"            columnIndex="39" nullValue="" />
+        <result property="slug"                   columnIndex="40" nullValue="" />
+
+    </resultMap>
+
+
+    <select id="getProduct"  resultClass="entries.ProdEntry" parameterClass="int" resultMap="rmProduct" >
+    SELECT 
+
+        prod.VIRTUEMART_VENDOR_ID,
+        prod.PRODUCT_PARENT_ID,
+        prod.PRODUCT_SKU,
+        prod.PRODUCT_WEIGHT,
+        prod.PRODUCT_WEIGHT_UOM,
+        prod.PRODUCT_LENGTH,
+        prod.PRODUCT_WIDTH,
+        prod.PRODUCT_HEIGHT,
+        prod.PRODUCT_LWH_UOM,
+        prod.PRODUCT_URL,
+        prod.PRODUCT_IN_STOCK,
+        prod.PRODUCT_ORDERED,
+        prod.LOW_STOCK_NOTIFICATION,
+        prod.PRODUCT_AVAILABLE_DATE,
+        prod.PRODUCT_AVAILABILITY,
+        prod.PRODUCT_SPECIAL,
+        prod.PRODUCT_SALES,
+        prod.PRODUCT_UNIT,
+        prod.PRODUCT_PACKAGING,
+        prod.PRODUCT_PARAMS,
+        prod.HITS,
+        prod.INTNOTES,
+        prod.METAROBOT,
+        prod.METAAUTHOR,
+        prod.LAYOUT,
+        prod.PUBLISHED,
+        prod.CREATED_ON,
+        prod.CREATED_BY,
+        prod.MODIFIED_ON,
+        prod.MODIFIED_BY,
+        prod.LOCKED_ON,
+        prod.LOCKED_BY,
+        prod.VIRTUEMART_PRODUCT_ID,
+        prodDesc.PRODUCT_S_DESC,
+        prodDesc.PRODUCT_DESC,
+        prodDesc.PRODUCT_NAME,
+        prodDesc.METADESC,
+        prodDesc.METAKEY,
+        prodDesc.CUSTOMTITLE,
+        prodDesc.SLUG
+              
+
+        FROM PUBLIC.JOS_VIRTUEMART_PRODUCTS prod
+        LEFT JOIN PUBLIC.JOS_VIRTUEMART_PRODUCTS_RU_RU prodDesc
+        ON prod.VIRTUEMART_PRODUCT_ID = prodDesc.VIRTUEMART_PRODUCT_ID
+    WHERE VIRTUEMART_PRODUCT_ID = #value#
+    </select>
+
+    <resultMap id="rmPrice" class = "entries.PriceEntry">
+                                                                    
+        <result property="virtuemart_product_price_id" columnIndex="1" nullValue="0" />
+        <result property="virtuemart_product_id"       columnIndex="2" nullValue="0" />
+        <result property="virtuemart_shoppergroup_id"  columnIndex="3" nullValue="0" />
+        <result property="product_price"               columnIndex="4" nullValue="0.0" />
+        <result property="override"                    columnIndex="5" nullValue="0" />
+        <result property="product_override_price"      columnIndex="6" nullValue="0.0" />
+        <result property="product_tax_id"              columnIndex="7" nullValue="0" />
+        <result property="product_discount_id"         columnIndex="8" nullValue="0" />
+        <result property="product_currency"            columnIndex="9" nullValue="0" />
+        <result property="PRODUCT_PRICE_PUBLISH_UP"         columnIndex="10" nullValue="0000-00-00 00:00:00" />
+        <result property="PRODUCT_PRICE_PUBLISH_DOWN"         columnIndex="11" nullValue="0000-00-00 00:00:00" />
+        <result property="price_quantity_start"        columnIndex="12" nullValue="0" />
+        <result property="price_quantity_end"          columnIndex="13" nullValue="0" />
+        <result property="created_on"                  columnIndex="14" nullValue="0000-00-00 00:00:00" />
+        <result property="created_by"                  columnIndex="15" nullValue="0" />
+        <result property="modified_on"                 columnIndex="16" nullValue="0000-00-00 00:00:00" />
+        <result property="modified_by"                 columnIndex="17" nullValue="0" />
+        <result property="locked_on"                   columnIndex="18" nullValue="0000-00-00 00:00:00" />
+        <result property="locked_by"                   columnIndex="19" nullValue="0" />
+
+    </resultMap>
+
+    <select id="getPriceForProduct"  resultClass="entries.PriceEntry" parameterClass="int" resultMap="rmPrice" >
+    SELECT 
+
+         price.VIRTUEMART_PRODUCT_PRICE_ID,
+         price.VIRTUEMART_PRODUCT_ID,
+         price.VIRTUEMART_SHOPPERGROUP_ID,
+         price.PRODUCT_PRICE,
+         price.OVERRIDE,
+         price.PRODUCT_OVERRIDE_PRICE,
+         price.PRODUCT_TAX_ID,
+         price.PRODUCT_DISCOUNT_ID,
+         price.PRODUCT_CURRENCY,
+         price.PRODUCT_PRICE_PUBLISH_UP,
+         price.PRODUCT_PRICE_PUBLISH_DOWN,
+         price.PRICE_QUANTITY_START,
+         price.PRICE_QUANTITY_END,
+         price.CREATED_ON,
+         price.CREATED_BY,
+         price.MODIFIED_ON,
+         price.MODIFIED_BY,
+         price.LOCKED_ON,
+         price.LOCKED_BY
+
+        FROM PUBLIC.JOS_VIRTUEMART_PRODUCT_PRICES price
+    WHERE VIRTUEMART_PRODUCT_ID = #value#
+    LIMIT 1 OFFSET 0
+    </select>   
+</sqlMap>

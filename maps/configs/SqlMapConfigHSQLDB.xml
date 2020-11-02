@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+    Document   : SqlMapConfig.xml
+    Created on : 19 Ноябрь 2008 г., 11:04
+    Author     : msv
+    Description:
+        Purpose of the document follows.
+-->
+
+<!DOCTYPE sqlMapConfig PUBLIC '-//iBATIS.com//DTD SQL Map Config 2.0//EN' 'http://www.ibatis.com/dtd/sql-map-config-2.dtd'>
+<sqlMapConfig>
+
+    <transactionManager type="JDBC">
+        <dataSource type="SIMPLE">
+            <property name="JDBC.Driver" value="org.hsqldb.jdbcDriver"/>
+            <property name="JDBC.ConnectionURL"
+                value="jdbc:hsqldb:file:${dbfile}"/>
+            <property name="JDBC.Username" value="${dbusername}"/>
+            <property name="JDBC.Password" value="${dbpassword}"/>
+            <property name="JDBC.DefaultAutoCommit" value="true"/>
+        </dataSource>
+    </transactionManager>
+
+     <sqlMap resource="maps/vm2/hsql/dump.xml"/>
+     <sqlMap resource="maps/vm2/hsql/full-sync.xml"/>
+    <sqlMap resource="maps/vm2/hsql/init.xml"/>
+    <sqlMap resource="maps/vm2/hsql/manuf.xml"/>    
+    <sqlMap resource="maps/vm2/hsql/priceloadersVM2.xml"/>
+    <sqlMap resource="maps/vm2/hsql/priceloadersVM3.xml"/>
+    <sqlMap resource="maps/vm2/hsql/tree.xml"/>
+    <sqlMap resource="maps/vm2/hsql/productlist.xml"/>
+    <sqlMap resource="maps/vm2/hsql/utils.xml"/>
+    <sqlMap resource="maps/vm2/hsql/product.xml"/>    
+    <sqlMap resource="maps/vm2/hsql/custom_plugins.xml"/>    
+
+</sqlMapConfig>

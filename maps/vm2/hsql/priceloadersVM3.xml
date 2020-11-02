@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC '-//iBATIS.com//DTD SQL Map 2.0//EN' 'http://www.ibatis.com/dtd/sql-map-config-2.dtd'>
+<sqlMap namespace="vm3">
+    <!--VM3_setChildZeroStock//-->
+    <update id="VM3_setChildZeroStock"  parameterClass="HashMap">
+            UPDATE
+        jos_virtuemart_products p
+        SET 
+        p.product_in_stock = 0
+        WHERE p.virtuemart_product_id IN 
+(SELECT virtuemart_product_id FROM
+ jos_virtuemart_products p1 WHERE p1.product_parent_id=#parent_id#)                
+    </update>
+    <!--VM3_setChildPrice//-->
+    <update id="VM3_setChildPrice" parameterClass="HashMap">
+        UPDATE jos_virtuemart_product_prices pp
+        SET
+        pp.product_price=#product_price#
+        ,pp.product_price_publish_down=null 	
+        ,pp.product_tax_id=3 	
+        WHERE 
+        pp.virtuemart_shoppergroup_id=1
+        AND pp.virtuemart_product_id IN
+        (SELECT p1.virtuemart_product_id FROM
+ jos_virtuemart_products p1 WHERE p1.product_parent_id=#parent_id#  ) 
+    </update>        
+       <update id="VM3_setChildPrice_Opt" parameterClass="HashMap">
+        UPDATE jos_virtuemart_product_prices pp
+        SET
+        pp.product_price=#product_price#
+        ,pp.product_price_publish_down=null 	
+        ,pp.product_tax_id=5 	
+        WHERE 
+        pp.virtuemart_shoppergroup_id=4
+        AND pp.virtuemart_product_id IN
+        (SELECT p1.virtuemart_product_id FROM
+ jos_virtuemart_products p1 WHERE p1.product_parent_id=#parent_id#  ) 
+    </update>  
+    <!-- VM3_getcntchildproductTB //-->
+    <select id="VM3_getcntchildproductTB" resultClass="int" parameterClass="HashMap">
+        SELECT COUNT(*) 
+        FROM jos_virtuemart_products p
+        INNER JOIN jos_virtuemart_product_customfields cust1 ON cust1.virtuemart_product_id=p.virtuemart_product_id 
+        AND cust1.virtuemart_custom_id=22 AND cust1.customfield_value=#razmer#
+        INNER JOIN jos_virtuemart_product_customfields cust2 ON cust2.virtuemart_product_id=p.virtuemart_product_id
+        AND cust2.virtuemart_custom_id=21 AND cust2.customfield_value=#color#        
+        WHERE p.virtuemart_product_id IN
+        (SELECT virtuemart_product_id FROM
+ jos_virtuemart_products p1 WHERE p1.product_parent_id=#parent_id#)        
+    </select>
+    <!-- VM3_insProductCustomValue //-->  
+    <insert id="VM3_insProductCustomValue"  parameterClass="HashMap">
+    INSERT INTO jos_virtuemart_product_customfields
+    (customfield_value,virtuemart_custom_id,virtuemart_product_id,customfield_params)
+        VALUES
+   (#customfield_value#,#virtuemart_custom_id#,#virtuemart_product_id#,#customfield_params#)
+    </insert>    
+    <!-- VM3_getChildProductTB //-->
+    <select id="VM3_getChildProductTB"  parameterClass="HashMap"  resultClass="int" >
+        SELECT p.virtuemart_product_id
+        FROM jos_virtuemart_products p        
+        INNER JOIN jos_virtuemart_product_customfields cust1 ON cust1.virtuemart_product_id=p.virtuemart_product_id 
+        AND cust1.virtuemart_custom_id=22 AND cust1.customfield_value=#razmer#
+        INNER JOIN jos_virtuemart_product_customfields cust2 ON cust2.virtuemart_product_id=p.virtuemart_product_id
+        AND cust2.virtuemart_custom_id=21 AND cust2.customfield_value=#color#        
+        WHERE p.virtuemart_product_id IN
+        (SELECT virtuemart_product_id FROM
+ jos_virtuemart_products p1 WHERE p1.product_parent_id=#parent_id#)                        
+        LIMIT 1 OFFSET 0
+    </select>
+   <insert id="VM3_insPriceFromTableTB" parameterClass="HashMap">
+        INSERT INTO jos_virtuemart_product_prices
+        (
+        virtuemart_product_id, virtuemart_shoppergroup_id, product_price, override, 
+        product_override_price, product_tax_id, product_discount_id, product_currency,
+        created_by, modified_by, locked_by,product_price_publish_down 	
+        ) 
+        VALUES
+        (#virtuemart_product_id#, 1, #product_price#, 0, 
+        0.00000, 3, -1, #product_currency#,
+        #user_id#, #user_id#,  0,null
+        )
+    </insert>
+       <insert id="VM3_insPriceFromTableTB_Opt" parameterClass="HashMap">
+        INSERT INTO jos_virtuemart_product_prices
+        (
+        virtuemart_product_id, virtuemart_shoppergroup_id, product_price, override, 
+        product_override_price, product_tax_id, product_discount_id, product_currency,
+        created_by, modified_by, locked_by,product_price_publish_down 	
+        ) 
+        VALUES
+        (#virtuemart_product_id#, 4, #product_price#, 0, 
+        0.00000, 5, -1, #product_currency#,
+        #user_id#, #user_id#,  0,null
+        )
+    </insert>
+        <select id="VM3_IssetProductTB"  parameterClass="HashMap"  resultClass="int" >
+        SELECT count(*)
+        FROM jos_virtuemart_products                        
+        WHERE product_sku=#product_sku# 
+        AND product_parent_id=0
+    </select>
+    <update id="VM3_updPriceValueTB" parameterClass="HashMap">
+        UPDATE jos_virtuemart_product_prices
+        SET
+        product_price=#product_price#
+        ,product_price_publish_down=null 	
+        WHERE virtuemart_product_id = #virtuemart_product_id# 
+        AND virtuemart_shoppergroup_id = #virtuemart_shoppergroup_id#
+    </update>
+    <select id="VM3_getProductTB"  parameterClass="HashMap"  resultClass="int" >
+        SELECT virtuemart_product_id
+        FROM jos_virtuemart_products p                        
+        WHERE product_sku=#product_sku#       
+        AND product_parent_id=0
+        LIMIT 1 OFFSET 0
+    </select>
+</sqlMap>

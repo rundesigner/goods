@@ -1,0 +1,389 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC '-//iBATIS.com//DTD SQL Map 2.0//EN' 'http://www.ibatis.com/dtd/sql-map-config-2.dtd'>
+<sqlMap namespace="vm2">
+    <update id="unpublishNonPriceProducts" parameterClass="String">
+        UPDATE
+        jos_virtuemart_products  p
+        SET
+        p.published = 0
+        WHERE 
+        p.virtuemart_product_id IN ( SELECT ps.product_id FROM product_state ps WHERE ps.updated != #value# )
+    </update>        
+    <select id="getTableCnt"  resultClass="int" parameterClass="HashMap">
+        SELECT count(*)
+        FROM $tablename$
+    </select>
+    <select id="getTableData"  remapResults="true" resultClass="HashMap" parameterClass="HashMap">
+        SELECT a.*
+        FROM $tablename$ a
+        LIMIT #limit# OFFSET #offset#
+    </select>
+    <select id="VM2_IssetProduct"  parameterClass="HashMap"  resultClass="int" >
+        SELECT count(*)
+        FROM jos_virtuemart_products p
+        LEFT JOIN product_state s ON p.virtuemart_product_id=s.product_id        
+        LEFT JOIN jos_virtuemart_product_categories x ON p.virtuemart_product_id=x.virtuemart_product_id
+        <isEqual prepend="WHERE" property="findByName" compareValue="0">
+         s.xml_sku=#product_sku#
+        </isEqual>
+        <isEqual prepend="WHERE" property="findByName" compareValue="1">
+         s.xml_name=#product_name#
+        </isEqual>
+        <isGreaterThan prepend="AND" property="checkcategory" compareValue="0">
+        x.virtuemart_category_id=#parent_id#
+        </isGreaterThan>
+        AND s.xml_id=#xml_id#
+    </select>
+    <insert id="VM2_insProductFromTable" parameterClass="HashMap">
+        INSERT INTO jos_virtuemart_products
+        (virtuemart_vendor_id,product_parent_id, product_sku, product_in_stock, product_params, layout
+        , published,created_on,modified_on) 
+        VALUES
+        (1, #parent_id#,#product_sku#, #product_in_stock#, 'min_order_level="0"|max_order_level="0"|', 'default'
+        , #published#,#xtime#,#xtime#)
+        <selectKey resultClass="int" keyProperty="virtuemart_product_id">
+            CALL IDENTITY()
+        </selectKey>
+    </insert>
+    <insert id="VM2_insProductFromTableRURU" parameterClass="HashMap">
+        INSERT INTO jos_virtuemart_products_ru_ru
+        (virtuemart_product_id, product_s_desc, product_desc, product_name, slug, metadesc, metakey) 
+        VALUES
+        (#virtuemart_product_id#, #product_s_desc#, #product_desc#, #product_name#, #slug#, #metadesc#, #metakey#);
+    </insert>
+    <select id="VM2_getCntProductSlug"   parameterClass="String" resultClass="int">
+        SELECT count(*)
+        FROM jos_virtuemart_products_ru_ru 
+        WHERE slug=#value#
+    </select>
+    
+    <insert id="VM2_insProductLocal" parameterClass="HashMap">
+        INSERT INTO product_state (product_id,xml_id,updated,created,xml_name,xml_sku)
+        VALUES (#virtuemart_product_id#,#xml_id#,#xtime#,#xtime#,#xml_name#,#xml_sku#)
+    </insert>
+    <insert id="VM2_insProductCategoryXref" parameterClass="HashMap">
+        INSERT INTO jos_virtuemart_product_categories (virtuemart_product_id,virtuemart_category_id)
+        VALUES (#virtuemart_product_id#,#virtuemart_category_id#)
+    </insert>
+    <insert id="VM2_insProductCategoryXrefLocal" parameterClass="HashMap">
+        INSERT INTO product_category_xref
+        (product_id,category_id)
+        VALUES 
+        (#virtuemart_product_id#,#virtuemart_category_id#)
+    </insert>
+    <select id="VM2_getDefaultShG" resultClass="int">
+        SELECT virtuemart_shoppergroup_id
+        FROM jos_virtuemart_shoppergroups 
+        WHERE "default"=1
+        LIMIT 1 OFFSET 0
+    </select>
+    <insert id="VM2_insPriceFromTable" parameterClass="HashMap">
+        INSERT INTO jos_virtuemart_product_prices
+        (
+        virtuemart_product_id, virtuemart_shoppergroup_id, product_price, override, 
+        product_override_price, product_tax_id, product_discount_id, product_currency,
+        created_by, modified_by, locked_by,product_price_publish_down 	
+        ) 
+        VALUES
+        (#virtuemart_product_id#, 0, #product_price#, 0, 
+        0.00000, 0, -1, #product_currency#,
+        #user_id#, #user_id#,  0,null
+        )
+    </insert>
+    <update id="VM2_updProductName"  parameterClass="HashMap">
+        UPDATE
+        jos_virtuemart_products_ru_ru
+        SET
+        product_name = #product_name#
+        WHERE virtuemart_product_id = #product_id#
+    </update>
+    <select id="VM2_getProduct"  parameterClass="HashMap"  resultClass="int" >
+        SELECT p.virtuemart_product_id
+        FROM jos_virtuemart_products p
+        LEFT JOIN product_state s ON p.virtuemart_product_id=s.product_id
+        LEFT JOIN jos_virtuemart_product_categories x ON p.virtuemart_product_id=x.virtuemart_product_id
+        <isEqual prepend="WHERE" property="findByName" compareValue="0">
+         s.xml_sku=#product_sku#
+        </isEqual>
+        <isEqual prepend="WHERE" property="findByName" compareValue="1">
+         s.xml_name=#product_name#
+        </isEqual>
+        <isGreaterThan prepend="AND" property="checkcategory" compareValue="0">
+        x.virtuemart_category_id=#parent_id#
+        </isGreaterThan>
+        AND s.xml_id=#xml_id#
+        LIMIT 1 OFFSET 0
+    </select>
+    <update id="VM2_updPriceProductLocal" parameterClass="HashMap">
+        UPDATE product_state SET updated=#xtime#
+        WHERE product_id=#virtuemart_product_id#
+    </update>
+    <update id="VM2_updPriceValue" parameterClass="HashMap">
+        UPDATE jos_virtuemart_product_prices
+        SET
+        product_price=#product_price#
+        ,product_price_publish_down=null 	
+        WHERE virtuemart_product_id = #virtuemart_product_id#
+    </update>
+    <update id="VM2_updProductStock"  parameterClass="HashMap">
+        UPDATE
+        jos_virtuemart_products
+        SET
+        product_in_stock = #product_in_stock#
+        ,published = #published#
+        WHERE virtuemart_product_id = #virtuemart_product_id#
+    </update>
+    <update id="VM2_updProductSdesc"  parameterClass="HashMap">
+        UPDATE
+        jos_virtuemart_products_ru_ru
+        SET
+        product_s_desc = #product_s_desc#
+        WHERE virtuemart_product_id = #virtuemart_product_id#
+    </update>
+    <update id="VM2_updProductStockInYaschik"  parameterClass="HashMap">
+        UPDATE
+        jos_virtuemart_products
+        SET
+        product_params = #product_params#
+        WHERE virtuemart_product_id = #virtuemart_product_id#
+    </update>
+    <select id="VM2_getCntProductCustomField" resultClass="int" parameterClass="HashMap">
+        SELECT COUNT(*) FROM jos_virtuemart_product_customfields
+        WHERE virtuemart_custom_id=#virtuemart_custom_id# 
+        AND virtuemart_product_id=#virtuemart_product_id#
+    </select>
+    <insert id="VM2_insProductCustomFieldValue"  parameterClass="HashMap">
+        INSERT INTO jos_virtuemart_product_customfields
+        (custom_value,virtuemart_custom_id,virtuemart_product_id)
+        VALUES
+        (#custom_value#,#virtuemart_custom_id#,#virtuemart_product_id#)
+    </insert>
+    <select id="VM2_getCntCustomIdByName" resultClass="int" parameterClass="String">
+        SELECT COUNT(*)
+        FROM jos_virtuemart_customs
+        WHERE custom_title=#value#
+    </select>
+    <select id="VM2_getCustomIdByName" resultClass="int" parameterClass="String">
+        SELECT virtuemart_custom_id
+        FROM jos_virtuemart_customs
+        WHERE custom_title=#value#
+        LIMIT 1 OFFSET 0
+    </select>
+    <insert id="VM2_insCustomByName"  parameterClass="HashMap">
+        INSERT INTO jos_virtuemart_customs 
+        (custom_parent_id, virtuemart_vendor_id, custom_jplugin_id, custom_element, admin_only
+        , custom_title, custom_tip, custom_value, custom_field_desc, field_type, is_list, is_hidden
+        , is_cart_attribute, layout_pos, custom_params, shared, published
+        ) 
+        VALUES
+        (0, 1, 0, '0', 0
+        ,#title#, '', '', #title#, 'S', 0, 0
+        ,#is_cart_attribute#, '', '0', 0, 1)
+        <selectKey resultClass="int" keyProperty="virtuemart_custom_id">
+            CALL IDENTITY()
+        </selectKey>
+    </insert>
+    <select id="VM2_getCntProductCustomValue" resultClass="int" parameterClass="HashMap">
+        SELECT COUNT(*)
+        FROM
+        jos_virtuemart_product_customfields
+        WHERE
+<!--        custom_value=#custom_value#-->
+<!--        AND -->
+            virtuemart_custom_id=#virtuemart_custom_id#
+            AND virtuemart_product_id=#virtuemart_product_id#
+    </select>
+    <insert id="VM2_insProductCustomValue"  parameterClass="HashMap">
+    INSERT INTO jos_virtuemart_product_customfields
+    (custom_value,virtuemart_custom_id,virtuemart_product_id)
+        VALUES
+   (#custom_value#,#virtuemart_custom_id#,#virtuemart_product_id#)
+    </insert>
+
+    <update id="VM2_updProductCustomValue"  parameterClass="HashMap">
+        UPDATE jos_virtuemart_product_customfields
+        SET
+            custom_value = #custom_value#
+        WHERE
+            virtuemart_custom_id=#virtuemart_custom_id#
+            AND virtuemart_product_id=#virtuemart_product_id#
+    </update>
+    
+    <select id="VM2_getCntCategory"  parameterClass="HashMap"  resultClass="int" >
+        SELECT count(*)
+        FROM jos_virtuemart_categories c
+        LEFT JOIN category_state s ON c.virtuemart_category_id=s.category_id
+        LEFT JOIN category_xref x ON c.virtuemart_category_id=x.category_child_id
+        WHERE trim(both from s.xml_name)=#category_name#
+        AND (s.xml_id=#xml_id# OR s.xml_id=0)
+        AND (x.category_parent_id=#parent_id# OR x.category_parent_id IS NULL)
+    </select>
+    
+    <insert id="VM2_insCat" parameterClass="HashMap">
+        INSERT INTO jos_virtuemart_categories 
+        (virtuemart_vendor_id, category_template, category_layout, category_product_layout
+        , products_per_row, 
+        limit_list_start, 
+        limit_list_step, 
+        limit_list_max, 
+        limit_list_initial
+        , hits, metarobot, metaauthor, ordering, shared, published) 
+        VALUES
+        (1, '0', 'default', 'default',
+        3,
+        0,
+        10, 
+        0,
+        10,
+        0, '', '', 1, 0, 1)
+        <selectKey resultClass="int" keyProperty="virtuemart_category_id">
+            CALL IDENTITY()
+        </selectKey>
+    </insert>
+    
+    <insert id="VM2_insCat17" parameterClass="HashMap">
+        INSERT INTO jos_virtuemart_categories 
+        (virtuemart_vendor_id, category_template, category_layout, category_product_layout
+        , products_per_row        
+        , hits, metarobot, metaauthor, ordering, shared, published) 
+        VALUES
+        (1, '0', 'default', 'default'
+        ,3        
+        ,0, '', '', 1, 0, 1)
+        <selectKey resultClass="int" keyProperty="virtuemart_category_id">
+            CALL IDENTITY()
+        </selectKey>
+    </insert>
+    
+    <insert id="VM2_insCatName" parameterClass="HashMap">
+  INSERT INTO jos_virtuemart_categories_ru_ru 
+  (virtuemart_category_id, category_name, category_description
+  , metadesc, metakey, customtitle, slug) 
+  VALUES
+(#virtuemart_category_id#, #category_name#, ''
+, '', '', '', #slug#)
+    </insert>
+    
+    <insert id="VM2_insCatXref" parameterClass="HashMap">
+INSERT INTO jos_virtuemart_category_categories
+(category_parent_id, category_child_id, ordering)
+VALUES
+(#parent_id#, #virtuemart_category_id#, 0)
+    </insert>    
+    
+    <insert id="VM2_insCatXrefLocal" parameterClass="HashMap">
+INSERT INTO category_xref
+(category_parent_id, category_child_id)
+VALUES
+(#parent_id#, #virtuemart_category_id#)
+    </insert>   
+
+    <select id="VM2_getCntCategorySlug" parameterClass="String" resultClass="int" >
+         SELECT count(*)
+        FROM jos_virtuemart_categories_ru_ru 
+        WHERE slug=#value#
+    </select>
+    
+    <insert id="VM2_insCatNameLocal" parameterClass="HashMap">
+        INSERT INTO category_state (category_id,xml_id,created,xml_name)
+        VALUES (#virtuemart_category_id#,#xml_id#,#xtime#,#category_name#)
+    </insert>
+    
+    <select id="VM2_getCategoryId"  parameterClass="HashMap"  resultClass="int" >
+        SELECT c.virtuemart_category_id
+        FROM jos_virtuemart_categories c
+        LEFT JOIN category_state s ON c.virtuemart_category_id=s.category_id
+        LEFT JOIN category_xref x ON c.virtuemart_category_id=x.category_child_id
+        WHERE s.xml_name=#category_name#
+        AND s.xml_id=#xml_id#
+        <isGreaterThan prepend="AND" property="parent_id" compareValue="0">
+      x.category_parent_id=#parent_id#
+        </isGreaterThan>
+        LIMIT 1 OFFSET 0
+    </select>
+    
+    <select id="VM2_getCntManufacturers"  parameterClass="HashMap"  resultClass="int" >
+     SELECT COUNT(*)
+     FROM jos_virtuemart_manufacturers_ru_ru 
+     WHERE mf_name=#manufacturer#
+    </select>
+    
+    <insert id="VM2_insManufacturer"   parameterClass="HashMap">
+    INSERT INTO jos_virtuemart_manufacturers 
+    (virtuemart_manufacturercategories_id, hits, published
+    )
+    VALUES
+    (1, 0, 1)
+        <selectKey resultClass="int" keyProperty="virtuemart_manufacturer_id">
+            CALL IDENTITY()
+        </selectKey>
+    </insert>
+     
+    <insert id="VM2_insManufacturerName"   parameterClass="HashMap">
+INSERT INTO jos_virtuemart_manufacturers_ru_ru 
+(virtuemart_manufacturer_id, mf_name, mf_email, mf_desc, mf_url, slug) 
+VALUES
+(#virtuemart_manufacturer_id#, #manufacturer#, '', '', '', #mf_slug#);
+    </insert>
+    
+    <select id="VM2_getManufacturerId"  resultClass="int"  parameterClass="HashMap">
+    SELECT virtuemart_manufacturer_id
+    FROM jos_virtuemart_manufacturers_ru_ru
+    WHERE mf_name=#manufacturer#
+    LIMIT 1 OFFSET 0
+    </select>
+    
+    <select id="VM2_getCntProductManufacturerXref"  resultClass="int"  parameterClass="HashMap">
+         SELECT COUNT(*)
+         FROM jos_virtuemart_product_manufacturers
+         WHERE 
+         virtuemart_product_id=#virtuemart_product_id#
+         AND 
+         virtuemart_manufacturer_id=#virtuemart_manufacturer_id#
+    </select>
+     
+    <insert id="VM2_insProductManufacturerXref"  parameterClass="HashMap">
+         INSERT INTO jos_virtuemart_product_manufacturers
+      (virtuemart_product_id, virtuemart_manufacturer_id)
+      VALUES
+      (#virtuemart_product_id#, #virtuemart_manufacturer_id#)
+    </insert>
+    
+    <select id="VM2_getCntManufacturerSlug" parameterClass="String" resultClass="int" >
+         SELECT count(*)
+        FROM jos_virtuemart_manufacturers_ru_ru 
+        WHERE slug=#value#
+    </select>
+    <update id="removePublishDown">
+     UPDATE  PUBLIC.JOS_VIRTUEMART_PRODUCT_PRICES 
+SET  PRODUCT_PRICE_PUBLISH_DOWN=null   
+    </update>
+    <update id="removePublishUp">
+     UPDATE  PUBLIC.JOS_VIRTUEMART_PRODUCT_PRICES 
+SET  PRODUCT_PRICE_PUBLISH_UP=null   
+    </update>
+     
+     
+    <update id="VM2_updCategoriesRuRu" parameterClass="HashMap">
+         UPDATE PUBLIC.JOS_VIRTUEMART_CATEGORIES_RU_RU
+         SET
+            CATEGORY_DESCRIPTION = #category_description#
+            ,METADESC = #metadesc#
+            ,METAKEY = #metakey#
+         WHERE VIRTUEMART_CATEGORY_ID = #virtuemart_category_id#
+    </update>
+
+    <insert id="VM2_insCategoryMedias" parameterClass="java.util.Map">
+         INSERT INTO PUBLIC.JOS_VIRTUEMART_CATEGORY_MEDIAS (VIRTUEMART_CATEGORY_ID,VIRTUEMART_MEDIA_ID,ORDERING)
+         VALUES(#virtuemart_category_id#,#virtuemart_media_id#,0)
+    </insert>
+
+    <select id="getMediaIdForCategory" resultClass="int" parameterClass="int" >
+        SELECT VIRTUEMART_MEDIA_ID
+        FROM PUBLIC.JOS_VIRTUEMART_CATEGORY_MEDIAS
+        WHERE VIRTUEMART_CATEGORY_ID = #value#
+        LIMIT 1
+    </select>
+
+     
+</sqlMap>

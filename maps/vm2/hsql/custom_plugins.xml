@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+To change this template, choose Tools | Templates
+and open the template in the editor.
+-->
+
+<!DOCTYPE sqlMap PUBLIC '-//iBATIS.com//DTD SQL Map 2.0//EN' 'http://www.ibatis.com/dtd/sql-map-config-2.dtd'>
+<sqlMap namespace="custom_plugins">
+
+    <select id="getCntProductsBySku2" resultClass="int" parameterClass="String">
+SELECT COUNT(*)
+FROM JOS_VIRTUEMART_PRODUCTS p
+WHERE PRODUCT_SKU=#value# AND PRODUCT_PARENT_ID=0
+    </select>   
+    
+    <select id="getCntProductsBySku" resultClass="int" parameterClass="String">
+SELECT COUNT(*)
+,ru.VIRTUEMART_PRODUCT_ID AS VIRTUEMART_PRODUCT_ID
+FROM JOS_VIRTUEMART_PRODUCTS p
+INNER JOIN JOS_VIRTUEMART_PRODUCTS_RU_RU ru ON p.VIRTUEMART_PRODUCT_ID=ru.VIRTUEMART_PRODUCT_ID
+WHERE PRODUCT_SKU=#value#
+GROUP BY  ru.VIRTUEMART_PRODUCT_ID
+    </select>   
+    
+    <select id="getProductDataBySku" resultClass="java.util.HashMap" parameterClass="String">
+SELECT ru.PRODUCT_NAME AS PRODUCT_NAME
+,ru.VIRTUEMART_PRODUCT_ID AS VIRTUEMART_PRODUCT_ID
+FROM JOS_VIRTUEMART_PRODUCTS p
+INNER JOIN JOS_VIRTUEMART_PRODUCTS_RU_RU ru ON p.VIRTUEMART_PRODUCT_ID=ru.VIRTUEMART_PRODUCT_ID
+WHERE PRODUCT_SKU=#value# AND PRODUCT_PARENT_ID=0
+LIMIT 1 OFFSET 0 
+    </select>   
+    
+</sqlMap>

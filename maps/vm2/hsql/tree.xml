@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+To change this template, choose Tools | Templates
+and open the template in the editor.
+-->
+
+<!DOCTYPE sqlMap PUBLIC '-//iBATIS.com//DTD SQL Map 2.0//EN' 'http://www.ibatis.com/dtd/sql-map-config-2.dtd'>
+<sqlMap namespace="vm">
+
+<!--
+    Здесь описываем дерево категорий:
+-->
+
+<!--
+    Запрос возвращает Дерево категорий:
+-->
+    <select id = "getChildCat" resultClass="entries.CategoryNode" parameterClass="java.util.Map">
+    
+        SELECT 
+        catTree.CATEGORY_CHILD_ID as index,
+        cat.CATEGORY_NAME AS name,
+        catTree.CATEGORY_PARENT_ID AS parentId,
+        'N' AS imagePresent,
+        catX.PUBLISHED AS published
+
+        FROM PUBLIC.JOS_VIRTUEMART_CATEGORY_CATEGORIES catTree
+
+        inner join  PUBLIC.JOS_VIRTUEMART_CATEGORIES_RU_RU cat
+        ON catTree.CATEGORY_CHILD_ID = cat.VIRTUEMART_CATEGORY_ID
+
+        inner join PUBLIC.JOS_VIRTUEMART_CATEGORIES catX
+        ON catTree.CATEGORY_CHILD_ID = catX.VIRTUEMART_CATEGORY_ID
+        
+        WHERE catTree.CATEGORY_PARENT_ID = #parent_id#
+        
+        AND catTree.CATEGORY_CHILD_ID is not null
+        AND catTree.CATEGORY_CHILD_ID is not null
+        LIMIT 1 OFFSET #startIndex#
+    </select>
+ 
+<!--
+?
+-->
+    <select id="isLeafCat" resultClass="int" parameterClass="int">
+        SELECT COUNT(*)
+        FROM JOS_VIRTUEMART_CATEGORY_CATEGORIES 
+        WHERE CATEGORY_PARENT_ID = #value#
+        AND CATEGORY_CHILD_ID is not null
+    </select>
+    
+<!--
+?
+-->
+    <select id="getChildCountCat" resultClass="int" parameterClass="int">
+        
+        SELECT COUNT(*)
+        FROM PUBLIC.JOS_VIRTUEMART_CATEGORY_CATEGORIES catTree
+        LEFT JOIN JOS_VIRTUEMART_CATEGORIES c ON catTree.CATEGORY_CHILD_ID=c.virtuemart_category_id
+        LEFT JOIN JOS_VIRTUEMART_CATEGORIES_RU_RU cru ON catTree.CATEGORY_CHILD_ID=cru.virtuemart_category_id
+        WHERE catTree.CATEGORY_PARENT_ID = #value#
+        AND catTree.CATEGORY_CHILD_ID is not null
+        AND c.virtuemart_category_id is not null
+        AND cru.virtuemart_category_id is not null
+
+    </select>
+    
+<!--
+Обновление имени категории
+-->
+    <update id="updateCatName" parameterClass="java.util.Map">
+        UPDATE PUBLIC.JOS_VIRTUEMART_CATEGORIES_RU_RU
+        SET CATEGORY_NAME = #name#
+        WHERE VIRTUEMART_CATEGORY_ID = #id#
+    </update>
+    
+<!--
+Добавление категорий
+-->    
+    <insert id="insCatName" parameterClass="entries.CategoryNode">
+        INSERT INTO PUBLIC.JOS_VIRTUEMART_CATEGORIES_RU_RU(virtuemart_category_id,CATEGORY_NAME)
+        VALUES(#index#,#name#)
+    </insert>
+    <insert id="insCatXref" parameterClass="entries.CategoryNode">
+        INSERT INTO JOS_VIRTUEMART_CATEGORY_CATEGORIES(category_parent_id,category_child_id)
+        VALUES(#parentId#,#index#)
+    </insert>
+    
+    <!-- Дублирующая таблица JOS_VIRTUEMART_CATEGORY_CATEGORIES --> 
+    <insert id="insCatXref2" parameterClass="entries.CategoryNode">
+        INSERT INTO category_xref(category_parent_id,category_child_id)
+        VALUES(#parentId#,#index#)
+    </insert>
+    
+    <!-- ???????????????????????? --> 
+    <insert id="insCategoryStates" parameterClass="entries.CategoryNode" >
+        insert into category_state (category_id)
+        VALUES(#index#)
+    </insert>
+    <!-- ???????????????????????? --> 
+    
+    <insert id="insCategoryPublish" parameterClass="entries.CategoryNode">
+        INSERT INTO PUBLIC.JOS_VIRTUEMART_CATEGORIES (VIRTUEMART_VENDOR_ID,PUBLISHED)
+        VALUES (1,1)
+        <selectKey resultClass="int" keyProperty="index">
+            CALL IDENTITY()
+        </selectKey>
+    </insert>
+    
+<!--
+Удаление категорий
+-->    
+    <delete id="delCatName" parameterClass="HashMap">
+        DELETE FROM PUBLIC.JOS_VIRTUEMART_CATEGORIES_RU_RU
+        WHERE virtuemart_category_id = #index#
+    </delete>
+    <delete id="delCatXref" parameterClass="HashMap">
+        DELETE FROM PUBLIC.JOS_VIRTUEMART_CATEGORY_CATEGORIES
+        WHERE category_child_id= #index#
+    </delete>
+    <delete id="delCatXref2" parameterClass="HashMap">
+        DELETE FROM category_xref
+        WHERE category_child_id= #index#
+    </delete>
+    <delete id="delCategoryPublish" parameterClass="HashMap">
+        DELETE FROM PUBLIC.JOS_VIRTUEMART_CATEGORIES
+        WHERE VIRTUEMART_category_id= #index#
+    </delete>
+    
+     <!-- ???????????????????????? --> 
+    <delete id="delCategoryStates" parameterClass="HashMap" >
+        delete from category_state 
+        WHERE category_id = #index#
+    </delete>
+    <!-- ???????????????????????? --> 
+    <select id="getProductIdsForCategory" parameterClass="int" resultClass="int" >
+        SELECT VIRTUEMART_PRODUCT_ID
+        FROM PUBLIC.JOS_VIRTUEMART_PRODUCT_CATEGORIES
+        WHERE VIRTUEMART_CATEGORY_ID = #value#
+    </select>
+    
+    <select id="getChildCategoryIdsForCategory" parameterClass="int" resultClass="int" >
+        SELECT CATEGORY_CHILD_ID
+        FROM PUBLIC.CATEGORY_XREF
+        WHERE CATEGORY_PARENT_ID = #value#
+    </select>
+    <update id="updateCatParent" parameterClass="java.util.Map">
+        UPDATE PUBLIC.JOS_VIRTUEMART_CATEGORY_CATEGORIES
+        SET CATEGORY_PARENT_ID = #parentId#
+        WHERE CATEGORY_CHILD_ID = #childId#
+    </update>
+</sqlMap>

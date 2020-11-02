@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+To change this template, choose Tools | Templates
+and open the template in the editor.
+-->
+
+<!DOCTYPE sqlMap PUBLIC '-//iBATIS.com//DTD SQL Map 2.0//EN' 'http://www.ibatis.com/dtd/sql-map-config-2.dtd'>
+<sqlMap namespace="vm">
+
+    <resultMap id="rmManuf"  class="dbmodels.CBItem">
+        <result property="id" columnIndex="1"/>
+        <result property="name" columnIndex="2" nullValue="" />
+    </resultMap>
+
+    <select id="selAllManufByCategory" resultClass="dbmodels.CBItem" parameterClass="java.util.HashMap" resultMap="rmManuf">
+        SELECT 
+        VIRTUEMART_MANUFACTURER_ID AS id,
+        MF_NAME AS name
+        FROM PUBLIC.JOS_VIRTUEMART_MANUFACTURERS_RU_RU
+        ORDER BY MF_NAME
+    </select>
+    
+    <select id="selAllVendors" resultClass="dbmodels.CBItem" parameterClass="java.util.HashMap" resultMap="rmManuf">
+        SELECT 
+        VIRTUEMART_VENDOR_ID AS id,
+        vendor_store_name AS name
+        FROM PUBLIC.JOS_VIRTUEMART_VENDORS_RU_RU
+        ORDER BY vendor_store_name
+    </select>
+    
+    <select id="getManufacturerIdByProductId"  resultClass="int" parameterClass="int">
+        SELECT virtuemart_manufacturer_id 
+        FROM jos_virtuemart_product_manufacturers
+        where virtuemart_product_id = #value#
+    </select>
+    
+    <insert id="insProdManuf" parameterClass = "java.util.Map">
+        insert into public.jos_virtuemart_product_manufacturers(virtuemart_product_id,virtuemart_manufacturer_id)
+        VALUES(#productId#,#manId#)
+    </insert>
+    
+    <delete id="delProdManuf" parameterClass = "java.util.Map">
+        delete from public.jos_virtuemart_product_manufacturers
+        where virtuemart_product_id = #productId#
+    </delete>
+    
+</sqlMap>
